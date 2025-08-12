@@ -1,2 +1,0 @@
-class PosOcupadaException(Exception):
-    pass 
