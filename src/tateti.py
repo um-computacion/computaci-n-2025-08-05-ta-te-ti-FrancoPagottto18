@@ -1,65 +1,53 @@
 from src.tablero import Tablero
 from src.jugador import Jugador
-from src.exepciones import PosOcupadaException
+from src.excepciones import JuegoTerminadoException
 
-class Tateti:
-    def __init__(self):
-        nombre1 = input("Nombre del jugador X: ")
-        nombre2 = input("Nombre del jugador O: ")
-        self.jugadores = [Jugador(nombre1, "X"), Jugador(nombre2, "O")]
+class JuegoTaTeTi:
+    def __init__(self, nombre_jugador1="Jugador 1", nombre_jugador2="Jugador 2"):
+        self.jugador1 = Jugador(nombre_jugador1, "X")
+        self.jugador2 = Jugador(nombre_jugador2, "0")
+        self.turno = self.jugador1
         self.tablero = Tablero()
-        self.turno = 0
+        self.terminado = False
 
-    def mostrar_tablero(self):
-        print("\nTablero:")
-        for fila in self.tablero.contenedor:
-            print(" | ".join([c if c else " " for c in fila]))
-            print("-" * 9)
+    def ocupar_casilla(self, fila, columna):
+        if self.terminado:
+            raise JuegoTerminadoException("El juego ya finalizo")
+        ficha = self.turno.ficha
+        self.tablero.poner_la_ficha(fila, columna, ficha)
+        if self.hay_ganador(ficha):
+            self.terminado = True
+            print(f"El jugador {self.turno.nombre} ha ganado!")
+            return
+        if self.tablero_lleno():
+            self.terminado = True
+            print("El juego ha terminado en empate") 
+            return
+        self.cambiar_turno()
 
-    def hay_ganador(self, simbolo):
-        t = self.tablero.contenedor
+    def cambiar_turno(self):
+        self.turno = self.jugador2 if self.turno == self.jugador1 else self.jugador1
+
+    def turno_de_jugador(self, jugador):
+        return self.turno == jugador
+
+    def obtener_ficha_jugador(self, jugador):
+        return jugador.ficha
+
+    def hay_ganador(self, ficha):
+        c = self.tablero.contenedor
+        for fila in c:
+            if fila == [ficha, ficha, ficha]:
+                return True
         for i in range(3):
-            if all([c == simbolo for c in t[i]]):
+            if [c[0][i], c[1][i], c[2][i]] == [ficha, ficha, ficha]:
                 return True
-            if all([t[j][i] == simbolo for j in range(3)]):
-                return True
-        if all([t[i][i] == simbolo for i in range(3)]):
+        if c[0][0] == c[1][1] == c[2][2] == ficha:
             return True
-        if all([t[i][2 - i] == simbolo for i in range(3)]):
+        if c[0][2] == c[1][1] == c[2][0] == ficha:
             return True
         return False
 
     def tablero_lleno(self):
-        return all([c != "" for fila in self.tablero.contenedor for c in fila])
-
-    def jugar(self):
-        while True:
-            self.mostrar_tablero()
-            jugador = self.jugadores[self.turno % 2]
-            print(f"Turno de {jugador}")
-            try:
-                fil = int(input("Ingrese fila (1-3): ")) - 1
-                col = int(input("Ingrese columna (1-3): ")) - 1
-                if not (0 <= fil < 3 and 0 <= col < 3):
-                    print("¡Fila o columna fuera de rango! Deben ser valores entre 1 y 3.")
-                    continue
-                self.tablero.poner_la_ficha(fil, col, jugador.simbolo)
-            except ValueError:
-                print("Por favor, ingrese números válidos.")
-                continue
-            except PosOcupadaException as e:
-                print(e)
-                continue
-            if self.hay_ganador(jugador.simbolo):
-                self.mostrar_tablero()
-                print(f"¡Felicidades! {jugador} ha ganado!")
-                break
-            if self.tablero_lleno():
-                self.mostrar_tablero()
-                print("¡Empate!")
-                break
-            self.turno += 1
-
-if __name__ == "__main__":
-    juego = Tateti()
-    juego.jugar()
+        return all(casilla != "" for fila in self.tablero.contenedor for casilla in fila)
+       
